@@ -65,7 +65,7 @@ The primary users are friends, couples, families, and small groups planning a sh
 4. Demo results are explicitly labelled as demo fixtures. The hosted production app has server-side Qloo credentials configured; the live status indicator and a fresh run should be used to inspect live Qloo output.
 5. Judges do not need to install the application or provide credentials to explore the hosted demo.
 
-For source installation, follow the root [README.md](./README.md). It uses Node.js and Bun, not Laravel. Lovable hosting details are in [README-LOVABLE.md](./README-LOVABLE.md).
+For source installation, follow the root [README.md](./README.md). Lovable hosting details are in [README-LOVABLE.md](./README-LOVABLE.md).
 
 ## Rules checklist
 
@@ -82,7 +82,7 @@ Before submitting, confirm the live demo opens without a login wall, the Qloo st
 
 ## Important accuracy notes
 
-- The hosted application is built and hosted with **Lovable**. It is **not Laravel**.
+- The hosted application is built and hosted with **Lovable**.
 - The repository's core application uses TypeScript, React, TanStack Start, Vite, and Tailwind CSS.
 - The agent orchestration is deterministic TypeScript, not an LLM-powered agent or agent-framework implementation.
 - Demo fixtures are illustrative samples, not Qloo responses.
