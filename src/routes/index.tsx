@@ -28,6 +28,7 @@ function Index() {
   const status = useServerFn(getStatus);
   const run = useServerFn(findCommonGround);
   const [live, setLive] = useState<boolean | null>(null);
+  const [health, setHealth] = useState<{ configured: boolean; error?: string } | null>(null);
   const [people, setPeople] = useState<Person[]>([blank(1), blank(2)]);
   const [location, setLocation] = useState("");
   const [intent, setIntent] = useState<Intent>("open");
@@ -39,7 +40,10 @@ function Index() {
   const builderRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { status().then((s) => setLive(s.live)).catch(() => setLive(false)); }, [status]);
+  useEffect(() => {
+    status().then((s) => { setLive(s.live); setHealth(s); })
+      .catch(() => { setLive(false); setHealth({ configured: false, error: "Could not check Qloo status." }); });
+  }, [status]);
 
   const update = (i: number, fn: (p: Person) => Person) => setPeople((ps) => ps.map((p, j) => (j === i ? fn(p) : p)));
   const loadDemo = () => {
@@ -79,7 +83,9 @@ function Index() {
       {live === false && (
         <div className="mx-auto max-w-6xl px-5">
           <div className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-3 text-sm">
-            <strong>Demo mode.</strong> No <code>QLOO_API_KEY</code> found on the server. Add it in your project's Secrets, then reload to use live Qloo. Results shown now are clearly marked sample data.
+            {health?.configured
+              ? <><strong>Qloo configured but not verified.</strong> {health.error} Check <code>QLOO_API_KEY</code> and <code>QLOO_API_BASE_URL</code> in Secrets. Showing clearly marked demo data meanwhile.</>
+              : <><strong>Demo mode.</strong> No <code>QLOO_API_KEY</code> found on the server. Add it in your project's Secrets, then reload to use live Qloo. Results shown now are clearly marked sample data.</>}
           </div>
         </div>
       )}

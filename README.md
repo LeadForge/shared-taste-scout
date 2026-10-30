@@ -37,7 +37,7 @@ QLOO_API_KEY=your_key bun run dev
 
 ## Lovable secret setup
 
-Project Settings → Secrets → add `QLOO_API_KEY`. Reload the preview / republish. The status pill switches from **Demo data** to **Live Qloo** automatically.
+Project Settings → Secrets → add `QLOO_API_KEY` and `QLOO_API_BASE_URL` (the server URL supplied by Qloo). Reload the preview / republish. On load the server runs a real minimal `/search` probe: the pill shows **Live Qloo** only after it succeeds; if the key is set but auth/URL fails, a banner shows the error and demo data is used.
 
 ## Demo mode
 
@@ -49,7 +49,7 @@ No accounts, emails or identifiers — optional nicknames only, used to label co
 
 ## Hackathon submission checklist
 
-- [ ] `QLOO_API_KEY` set in Secrets; status shows **Live Qloo**
+- [ ] `QLOO_API_KEY` and `QLOO_API_BASE_URL` set in Secrets; status shows **Live Qloo**
 - [ ] Run the demo group (New York, Weekend) end-to-end
 - [ ] Publish the app and copy the public URL
 - [ ] Record a ≤3 min demo video (builder → agent trace → cards → plan)
