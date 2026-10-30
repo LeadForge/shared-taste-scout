@@ -65,9 +65,33 @@ async function qloo(path: string, params: Record<string, string>, key: string): 
   throw new Error("Qloo rate limit reached — try again in a moment");
 }
 
-export const getStatus = createServerFn({ method: "GET" }).handler(async () => ({
-  live: Boolean(process.env["QLOO_API_KEY"]),
-}));
+export type QlooHealth = {
+  configured: boolean; customBaseUrl: boolean; verified: boolean;
+  live: boolean; error?: string; checkedAt: string;
+};
+let healthCache: { at: number; value: QlooHealth } | null = null;
+
+/** Distinguishes "key configured" from "API verified" via a real minimal /search probe (cached 5 min). */
+export const getStatus = createServerFn({ method: "GET" }).handler(async (): Promise<QlooHealth> => {
+  const key = process.env["QLOO_API_KEY"];
+  const base = { configured: Boolean(key), customBaseUrl: Boolean(process.env["QLOO_API_BASE_URL"]), checkedAt: new Date().toISOString() };
+  if (!key) return { ...base, verified: false, live: false, error: "QLOO_API_KEY is not set on the server." };
+  if (healthCache && Date.now() - healthCache.at < 300_000) return healthCache.value;
+  let value: QlooHealth;
+  try {
+    const r = await qloo("/search", { query: "Radiohead", types: "urn:entity:artist", take: "1" }, key);
+    const ok = Boolean(r?.results?.[0]?.entity_id);
+    value = { ...base, verified: ok, live: ok, ...(ok ? {} : { error: "Qloo responded but returned no entities." }) };
+  } catch (e: any) {
+    const m = String(e?.message || "");
+    const error = /401|403/.test(m) ? "Qloo rejected the API key (auth failed)."
+      : /404/.test(m) ? "Qloo base URL looks wrong (404)."
+      : /timed out|fetch|failed/i.test(m) ? "Could not reach the Qloo base URL." : m;
+    value = { ...base, verified: false, live: false, error };
+  }
+  if (value.verified) healthCache = { at: Date.now(), value };
+  return value;
+});
 
 export const findCommonGround = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => InputSchema.parse(d))
@@ -151,7 +175,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
             ? `Qloo explainability links this to ${connects.map((c) => c.via).slice(0, 3).join(", ")}${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}.`
             : `Returned by Qloo for the group's combined taste signals${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}. No per-signal explainability returned.`;
           recs.push({
-            id: e.entity_id, name: e.name, type: e.type ?? CATEGORIES[cat].urn!, category: cat,
+            id: e.entity_id, name: e.name, type: e.subtype ?? e.type ?? CATEGORIES[cat].urn!, category: cat,
             affinity, groupScore: (affinity ?? 0.5) * (0.5 + 0.5 * coverage),
             tags, address: e.properties?.address, image: e.properties?.image?.url,
             connects, reason,
