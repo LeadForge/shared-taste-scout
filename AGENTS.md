@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Qloo calls live only in src/lib/qloo.functions.ts (server function) reading QLOO_API_KEY inside the handler — keeps the key off the browser; missing key falls back to labelled demo fixtures.
