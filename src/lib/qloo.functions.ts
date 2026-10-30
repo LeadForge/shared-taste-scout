@@ -4,7 +4,8 @@ import { categoryFromType, composePlan } from "./engine";
 import { runDemo } from "./demo";
 import { CATEGORIES, INTENTS, type Category, type Recommendation, type Resolved, type RunResult, type TraceStep } from "./types";
 
-const HOST = "https://hackathon.api.qloo.com";
+const DEFAULT_HOST = "https://hackathon.api.qloo.com";
+const host = () => (process.env["QLOO_API_BASE_URL"] || DEFAULT_HOST).replace(/\/+$/, "");
 
 const InputSchema = z.object({
   people: z.array(z.object({
@@ -19,22 +20,49 @@ const InputSchema = z.object({
   forceDemo: z.boolean().optional(),
 });
 
-async function qloo(path: string, params: Record<string, string>, key: string): Promise<any> {
-  const url = `${HOST}${path}?${new URLSearchParams(params)}`;
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 9000);
-  try {
-    const res = await fetch(url, { headers: { "X-Api-Key": key, accept: "application/json" }, signal: ctrl.signal });
-    if (!res.ok) {
-      console.error("Qloo error", res.status, path, (await res.text()).slice(0, 300));
-      throw new Error(`Qloo returned ${res.status}`);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const searchCache = new Map<string, any>();
+
+/** Run tasks with limited concurrency and a small gap between starts (Qloo rate limits). */
+async function pool<T, R>(items: T[], limit: number, gapMs: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i] as T);
+      await sleep(gapMs);
     }
-    return await res.json();
-  } catch (e: any) {
-    throw new Error(e?.name === "AbortError" ? "Qloo request timed out" : e?.message || "Qloo request failed");
-  } finally {
-    clearTimeout(t);
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+async function qloo(path: string, params: Record<string, string>, key: string): Promise<any> {
+  const url = `${host()}${path}?${new URLSearchParams(params)}`;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), path.includes("insights") ? 15000 : 8000);
+    try {
+      const res = await fetch(url, { headers: { "X-Api-Key": key, accept: "application/json" }, signal: ctrl.signal });
+      if (res.status === 429 && attempt < 3) {
+        const ra = Number(res.headers.get("retry-after"));
+        await sleep(ra > 0 ? Math.min(ra * 1000, 5000) : 700 * 2 ** attempt + Math.random() * 300);
+        continue;
+      }
+      if (!res.ok) {
+        console.error("Qloo error", res.status, path, (await res.text()).slice(0, 300));
+        throw new Error(res.status === 429 ? "Qloo rate limit reached — try again in a moment" : `Qloo returned ${res.status}`);
+      }
+      return await res.json();
+    } catch (e: any) {
+      if (e?.name === "AbortError") throw new Error("Qloo request timed out");
+      throw new Error(e?.message || "Qloo request failed");
+    } finally {
+      clearTimeout(t);
+    }
   }
+  throw new Error("Qloo rate limit reached — try again in a moment");
 }
 
 export const getStatus = createServerFn({ method: "GET" }).handler(async () => ({
@@ -53,19 +81,21 @@ export const findCommonGround = createServerFn({ method: "POST" })
 
     // 1. Resolve
     const jobs = people.flatMap((p) => p.interests.map((it) => ({ person: p.name, ...it })));
-    const resolved: Resolved[] = await Promise.all(jobs.map(async (j) => {
+    const resolved: Resolved[] = await pool(jobs, 3, 150, async (j) => {
       const urn = CATEGORIES[j.category].urn;
       const params: Record<string, string> = { query: j.query, take: "1" };
-      if (urn) params.types = urn;
+      if (urn) params["types"] = urn;
+      const ck = JSON.stringify(params);
       try {
-        const r = await qloo("/search", params, key);
+        const r = searchCache.get(ck) ?? await qloo("/search", params, key);
+        searchCache.set(ck, r);
         const hit = r?.results?.[0];
         if (!hit?.entity_id) return { ...j, error: "No match found" };
         return { ...j, entityId: hit.entity_id, name: hit.name, type: hit.types?.[0] ?? hit.type };
       } catch (e: any) {
         return { ...j, error: e.message };
       }
-    }));
+    });
     const ok = resolved.filter((r) => r.entityId);
     trace.push({ stage: "Resolving interests", detail: `GET /search × ${jobs.length} → ${ok.length} matched`, calls: jobs.length, ok: ok.length });
 
@@ -89,7 +119,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
 
     let calls = 0, okCalls = 0;
     const recs: Recommendation[] = [];
-    await Promise.all(targets.map(async (cat) => {
+    await pool(targets, 2, 200, async (cat) => {
       const params: Record<string, string> = {
         "filter.type": CATEGORIES[cat].urn!,
         "signal.interests.entities": ids.join(","),
@@ -121,7 +151,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
             ? `Qloo explainability links this to ${connects.map((c) => c.via).slice(0, 3).join(", ")}${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}.`
             : `Returned by Qloo for the group's combined taste signals${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}. No per-signal explainability returned.`;
           recs.push({
-            id: e.entity_id, name: e.name, type: e.type ?? CATEGORIES[cat].urn!, category: categoryFromType(e.type ?? CATEGORIES[cat].urn!),
+            id: e.entity_id, name: e.name, type: e.type ?? CATEGORIES[cat].urn!, category: cat,
             affinity, groupScore: (affinity ?? 0.5) * (0.5 + 0.5 * coverage),
             tags, address: e.properties?.address, image: e.properties?.image?.url,
             connects, reason,
@@ -130,7 +160,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
       } catch (err: any) {
         warnings.push(`${CATEGORIES[cat].label}: ${err.message}`);
       }
-    }));
+    });
     const total = recs.length;
     trace.push({ stage: "Finding shared affinities", detail: `GET /v2/insights × ${calls} (${targets.join(", ")}) → ${total} candidates`, calls, ok: okCalls });
 
