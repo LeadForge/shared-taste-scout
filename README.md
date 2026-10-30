@@ -2,15 +2,15 @@
 
 **Find the overlap in your group's taste.** CommonGround is a group cultural discovery agent for the Qloo Agentic Hackathon. Friends, couples, families, or teams add a few favorite artists, films, books, places, brands, or games. CommonGround resolves those interests through Qloo, uses cultural affinity signals to build a shared shortlist, explains which inputs connect to each pick when Qloo provides explainability, and assembles a lightweight mini-plan.
 
-> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LARAVEL.md](./README-LARAVEL.md) only if you need notes about an optional Laravel-based hosting or integration layer.
+> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LOVABLE.md](./README-LOVABLE.md) only if you need notes about an optional Laravel-based hosting or integration layer.
 
 ## Demo and source
 
 - **Source:** https://github.com/LeadForge/shared-taste-scout
-- **Hosted preview:** https://id-preview--0b8e6686-35e3-4345-bf7f-13a0675b7ce0.lovable.app
+- **Hosted preview:** https://shared-taste-scout.lovable.app
 - **Hackathon:** Qloo Agentic Hackathon
 
-The hosted URL above is the Lovable preview URL known at the time this README was prepared. Replace it with the final public deployment URL if a different production URL is used.
+This is the public Lovable deployment intended for judging. The app is hosted on Lovable; Laravel is not required.
 
 ## Features
 
