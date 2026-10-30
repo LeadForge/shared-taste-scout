@@ -2,12 +2,12 @@
 
 **Find the overlap in your group's taste.** CommonGround helps friends, couples, families, and teams discover shared favorites across music, movies, books, places, brands, and more with Qloo-powered recommendations.
 
-> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LOVABLE.md](./README-LOVABLE.md) for Lovable-specific setup details.
+> **Platform:** CommonGround is a TypeScript/TanStack Start application built and hosted with Lovable. Laravel is not part of this project and is not needed to run it. See [README-LOVABLE.md](./README-LOVABLE.md) for the Lovable hosting and secrets guide.
 
 ## Demo and source
 
 - **Source:** https://github.com/LeadForge/shared-taste-scout
-- **Hosted preview:** https://shared-taste-scout.lovable.app
+- **Live demo:** https://shared-taste-scout.lovable.app
 - **Hackathon:** Qloo Agentic Hackathon
 
 This is the public Lovable deployment intended for judging. The app is hosted on Lovable; Laravel is not required.
@@ -40,6 +40,7 @@ flowchart LR
 
 - **UI:** React + TanStack Start + Tailwind CSS.
 - **Server:** `src/lib/qloo.functions.ts` uses TanStack Start server functions. Qloo credentials are read only in server-side handlers.
+- **Agentic workflow:** a task-specific orchestration resolves group favorites, builds shared Qloo taste signals, queries multiple recommendation categories, interprets returned affinity/explainability where available, ranks a shortlist, and composes a mini-plan. The workflow is deterministic TypeScript; it does not claim to use an LLM or an external agent framework.
 - **Validation:** Zod validates participant, interest, city, and intent input.
 - **Demo data:** `src/lib/demo.ts` contains deterministic illustrative fixtures, explicitly not Qloo data.
 - **Types and ranking:** `src/lib/types.ts` and `src/lib/engine.ts`.
@@ -146,6 +147,8 @@ The project is connected to Lovable. For hosted deployment:
 5. Run a real group query and confirm returned recommendations are live, not demo fixtures.
 
 ## Submission checklist
+
+The official rules require a working Qloo-integrated application that functions as an agentic tool, uses a suitable agent framework, or integrates Qloo into an existing agent; a functional demo URL; a public source-code repository with an open-source license; and an English project description. The Devpost submission should explain the task-specific multi-step agent workflow accurately. Do not describe the app as using an LLM or agent framework: its current orchestration is deterministic TypeScript.
 
 - [ ] Hosted demo URL opens without requiring the judge to install anything.
 - [ ] A judge can use the demo group even if no API credentials are available to them.
