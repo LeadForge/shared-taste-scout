@@ -1,56 +1,160 @@
 # CommonGround
 
-**A group cultural discovery agent for the Qloo Agentic Hackathon.**
-Friends, couples, families or teams each add 2–5 favorite artists, films, books, places, brands or games. CommonGround resolves them through Qloo, uses Qloo's taste intelligence to find shared recommendations, explains who each pick connects, and assembles a mini-plan.
+**Find the overlap in your group's taste.** CommonGround is a group cultural discovery agent for the Qloo Agentic Hackathon. Friends, couples, families, or teams add a few favorite artists, films, books, places, brands, or games. CommonGround resolves those interests through Qloo, uses cultural affinity signals to build a shared shortlist, explains which inputs connect to each pick when Qloo provides explainability, and assembles a lightweight mini-plan.
+
+> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [LARAVEL.md](./LARAVEL.md) only if you need notes about an optional Laravel-based hosting or integration layer.
+
+## Demo and source
+
+- **Source:** https://github.com/LeadForge/shared-taste-scout
+- **Hosted preview:** https://id-preview--0b8e6686-35e3-4345-bf7f-13a0675b7ce0.lovable.app
+- **Hackathon:** Qloo Agentic Hackathon
+
+The hosted URL above is the Lovable preview URL known at the time this README was prepared. Replace it with the final public deployment URL if a different production URL is used.
+
+## Features
+
+- Group builder for 2–5 participants with optional nicknames and 1–5 cultural interests per participant.
+- Interest categories include artist/music, movie/TV, book, place/restaurant, brand, videogame, and other.
+- Optional city and discovery intent.
+- Server-side Qloo entity resolution through `GET /search`.
+- Group recommendations through `GET /v2/insights`, using resolved entities as taste signals.
+- Explainability-aware recommendation notes and a transparent affinity/group-coverage ranking heuristic.
+- Short action trace showing the stages and API-call counts.
+- Clearly labelled deterministic demo fixtures when the Qloo key is absent or demo mode is selected.
+- No account, email, or personal identity information is required.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  B[Browser UI<br/>group builder] -->|server fn RPC| S[findCommonGround<br/>TanStack server function]
-  S -->|GET /search × N<br/>X-Api-Key| Q[(hackathon.api.qloo.com)]
-  S -->|GET /v2/insights × categories<br/>signal.interests.entities| Q
-  S --> R[Rank: affinity × group coverage<br/>diversify, compose plan]
-  R --> B
-  S -.no QLOO_API_KEY.-> D[Demo fixtures<br/>clearly labelled]
+  A[Browser: group builder] -->|TanStack server function| B[Server-side orchestration]
+  B -->|GET /search| C[Qloo Hackathon API]
+  B -->|GET /v2/insights| C
+  C --> D[Affinity + explainability fields]
+  D --> E[Group-aware shortlist + mini-plan]
+  E --> A
+  B -. key absent or demo selected .-> F[Clearly labelled demo fixtures]
+  F --> A
 ```
 
-- Frontend: TanStack Start + React + Tailwind (`src/routes/index.tsx`).
-- Server: `src/lib/qloo.functions.ts` (`createServerFn`, runs on the server/edge worker). The API key is read from `process.env.QLOO_API_KEY` inside the handler and never sent to the browser.
-- Input validated with Zod; every Qloo call has a 9s timeout; upstream errors are logged server-side and returned as safe messages.
+- **UI:** React + TanStack Start + Tailwind CSS.
+- **Server:** `src/lib/qloo.functions.ts` uses TanStack Start server functions. Qloo credentials are read only in server-side handlers.
+- **Validation:** Zod validates participant, interest, city, and intent input.
+- **Demo data:** `src/lib/demo.ts` contains deterministic illustrative fixtures, explicitly not Qloo data.
+- **Types and ranking:** `src/lib/types.ts` and `src/lib/engine.ts`.
 
-## Qloo endpoints used
+## Requirements
 
-Host: `QLOO_API_BASE_URL` secret (default `https://hackathon.api.qloo.com`); requests are paced and retried on 429 · Header: `X-Api-Key: <QLOO_API_KEY>`
+Install these locally before starting:
 
-1. `GET /search?query=<text>&types=<urn>&take=1` — resolve each favorite to an entity ID. `types` is sent when the category maps (`urn:entity:artist|movie|book|place|brand|videogame`).
-2. `GET /v2/insights?filter.type=<urn>&signal.interests.entities=<id,id,…>&feature.explainability=true&take=8[&filter.location.query=<city>]` — one call per target category for the chosen intent. Place requests are only made when a city is supplied.
+- Node.js 20 or newer (use a current LTS release).
+- Bun (the repository includes `bun.lock` and uses Bun commands below).
+- A Qloo hackathon API key for live recommendations. A key is **not** needed to run the labelled demo mode.
 
-Ranking: `groupScore = affinity × (0.5 + 0.5 × share of people whose favorites appear in query.explainability)`. Max 3 per category, 9 total. This is a transparent heuristic, not exact consensus.
+Check your versions:
 
-## Local setup
+```bash
+node --version
+bun --version
+```
+
+## Run locally
+
+1. Clone the repository and enter the project directory:
+
+   ```bash
+   git clone https://github.com/LeadForge/shared-taste-scout.git
+   cd shared-taste-scout
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+3. Create a local environment file named `.env` in the repository root. Do not commit this file:
+
+   ```dotenv
+   QLOO_API_KEY=replace_with_your_qloo_key
+   QLOO_API_BASE_URL=https://hackathon.api.qloo.com
+   ```
+
+   The base URL above is the default Qloo hackathon host. If the hackathon supplied you a different server URL, use that exact base URL instead. Do not append `/search` or `/v2/insights` to the base URL.
+
+4. Start the development server:
+
+   ```bash
+   bun run dev
+   ```
+
+5. Open the local URL printed by Vite (commonly `http://localhost:3000`).
+
+### Run without a Qloo key
+
+You can still install and explore the app in demo mode:
 
 ```bash
 bun install
-QLOO_API_KEY=your_key bun run dev
+bun run dev
 ```
 
-## Lovable secret setup
+When `QLOO_API_KEY` is absent, the server returns deterministic sample fixtures. The interface labels these as demo data. Demo results are not live Qloo recommendations.
 
-Project Settings → Secrets → add `QLOO_API_KEY` and `QLOO_API_BASE_URL` (the server URL supplied by Qloo). Reload the preview / republish. On load the server runs a real minimal `/search` probe: the pill shows **Live Qloo** only after it succeeds; if the key is set but auth/URL fails, a banner shows the error and demo data is used.
+## Environment variables
 
-## Demo mode
+| Variable | Required for | Description |
+|---|---|---|
+| `QLOO_API_KEY` | Live Qloo mode | API key supplied for the Qloo hackathon. Sent only as the `X-Api-Key` request header from the server. |
+| `QLOO_API_BASE_URL` | Optional | Qloo API server base URL. Defaults to `https://hackathon.api.qloo.com` if not provided. |
 
-Without the key (or with "Use demo data" ticked), the server returns deterministic fixtures. Every demo card is prefixed `[Demo]`, badged DEMO, and the UI shows a setup banner. Demo results are never presented as Qloo data.
+**Security:** Never put the API key in a `VITE_*` variable, frontend source file, public config, README, issue, screenshot, or commit. Keep `.env` local and untracked. If a key is accidentally committed or shared, revoke/rotate it through the provider.
 
-## Privacy
+## Qloo request flow
 
-No accounts, emails or identifiers — optional nicknames only, used to label contributions.
+1. `GET {QLOO_API_BASE_URL}/search` resolves each free-text favorite to an entity ID, using a mapped entity type where available.
+2. Resolved IDs are combined into `signal.interests.entities`.
+3. `GET {QLOO_API_BASE_URL}/v2/insights` requests candidates for selected recommendation types. A city filter is added for place recommendations when the user supplies a city.
+4. Results are ranked using returned affinity and the share of participants connected through the explainability payload when present. This is a product heuristic, not a claim of mathematically exact group consensus.
+5. The UI renders a shortlist and a deterministic mini-plan summary.
 
-## Hackathon submission checklist
+All calls are server-side and use the `X-Api-Key` header. The application does not need a separate LLM key for this deterministic workflow.
 
-- [ ] `QLOO_API_KEY` and `QLOO_API_BASE_URL` set in Secrets; status shows **Live Qloo**
-- [ ] Run the demo group (New York, Weekend) end-to-end
-- [ ] Publish the app and copy the public URL
-- [ ] Record a ≤3 min demo video (builder → agent trace → cards → plan)
-- [ ] Link this repo (MIT) and describe the Qloo usage above
+## Test and build
+
+```bash
+bun run test
+bun run lint
+bun run build
+```
+
+For a production preview after a successful build:
+
+```bash
+bun run preview
+```
+
+## Deploying with Lovable
+
+The project is connected to Lovable. For hosted deployment:
+
+1. Open the project in Lovable.
+2. Add `QLOO_API_KEY` and `QLOO_API_BASE_URL` under project **Settings → Secrets**.
+3. Keep the values server-side; do not add them to client-side environment variables.
+4. Publish/redeploy after changing code or secrets, then check that the app's status indicates a verified live Qloo connection.
+5. Run a real group query and confirm returned recommendations are live, not demo fixtures.
+
+## Submission checklist
+
+- [ ] Hosted demo URL opens without requiring the judge to install anything.
+- [ ] A judge can use the demo group even if no API credentials are available to them.
+- [ ] A live run has been tested with the hackathon Qloo key and the correct API server URL.
+- [ ] Demo fixtures are visibly labelled and never represented as live Qloo output.
+- [ ] No API key or other secret is present in Git history, screenshots, or the public repository.
+- [ ] README and submission description accurately describe the implementation.
+- [ ] Demo video and any additional materials match the actual submitted build.
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
