@@ -44,7 +44,7 @@ export const SAMPLE_PROFILES: Person[] = [
 /** Deterministic, clearly-labelled fixture. NOT Qloo output. */
 export function runDemo(input: RunInput): RunResult {
   const names = input.people.map((p) => p.name || "Someone");
-  const pick = (i: number) => names[i % names.length];
+  const pick = (i: number) => names[i % names.length] ?? "Someone";
   const via = (i: number) => {
     const p = input.people[i % input.people.length];
     return p?.interests[0]?.query || "their favorites";
