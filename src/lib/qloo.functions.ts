@@ -81,19 +81,21 @@ export const findCommonGround = createServerFn({ method: "POST" })
 
     // 1. Resolve
     const jobs = people.flatMap((p) => p.interests.map((it) => ({ person: p.name, ...it })));
-    const resolved: Resolved[] = await Promise.all(jobs.map(async (j) => {
+    const resolved: Resolved[] = await pool(jobs, 3, 150, async (j) => {
       const urn = CATEGORIES[j.category].urn;
       const params: Record<string, string> = { query: j.query, take: "1" };
       if (urn) params.types = urn;
+      const ck = JSON.stringify(params);
       try {
-        const r = await qloo("/search", params, key);
+        const r = searchCache.get(ck) ?? await qloo("/search", params, key);
+        searchCache.set(ck, r);
         const hit = r?.results?.[0];
         if (!hit?.entity_id) return { ...j, error: "No match found" };
         return { ...j, entityId: hit.entity_id, name: hit.name, type: hit.types?.[0] ?? hit.type };
       } catch (e: any) {
         return { ...j, error: e.message };
       }
-    }));
+    });
     const ok = resolved.filter((r) => r.entityId);
     trace.push({ stage: "Resolving interests", detail: `GET /search × ${jobs.length} → ${ok.length} matched`, calls: jobs.length, ok: ok.length });
 
@@ -117,7 +119,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
 
     let calls = 0, okCalls = 0;
     const recs: Recommendation[] = [];
-    await Promise.all(targets.map(async (cat) => {
+    await pool(targets, 2, 200, async (cat) => {
       const params: Record<string, string> = {
         "filter.type": CATEGORIES[cat].urn!,
         "signal.interests.entities": ids.join(","),
@@ -158,7 +160,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
       } catch (err: any) {
         warnings.push(`${CATEGORIES[cat].label}: ${err.message}`);
       }
-    }));
+    });
     const total = recs.length;
     trace.push({ stage: "Finding shared affinities", detail: `GET /v2/insights × ${calls} (${targets.join(", ")}) → ${total} candidates`, calls, ok: okCalls });
 
