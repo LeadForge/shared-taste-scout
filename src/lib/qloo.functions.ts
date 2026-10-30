@@ -42,7 +42,7 @@ async function qloo(path: string, params: Record<string, string>, key: string): 
   const url = `${host()}${path}?${new URLSearchParams(params)}`;
   for (let attempt = 0; attempt < 4; attempt++) {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 10000);
+    const t = setTimeout(() => ctrl.abort(), path.includes("insights") ? 15000 : 8000);
     try {
       const res = await fetch(url, { headers: { "X-Api-Key": key, accept: "application/json" }, signal: ctrl.signal });
       if (res.status === 429 && attempt < 3) {
@@ -151,7 +151,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
             ? `Qloo explainability links this to ${connects.map((c) => c.via).slice(0, 3).join(", ")}${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}.`
             : `Returned by Qloo for the group's combined taste signals${tags.length ? `; tagged ${tags.slice(0, 3).join(", ")}` : ""}. No per-signal explainability returned.`;
           recs.push({
-            id: e.entity_id, name: e.name, type: e.type ?? CATEGORIES[cat].urn!, category: categoryFromType(e.type ?? CATEGORIES[cat].urn!),
+            id: e.entity_id, name: e.name, type: e.type ?? CATEGORIES[cat].urn!, category: cat,
             affinity, groupScore: (affinity ?? 0.5) * (0.5 + 0.5 * coverage),
             tags, address: e.properties?.address, image: e.properties?.image?.url,
             connects, reason,
