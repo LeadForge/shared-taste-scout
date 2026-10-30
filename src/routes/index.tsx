@@ -325,7 +325,7 @@ function About() {
           <p><strong>Group ranking.</strong> Candidates are ranked by Qloo's returned affinity, weighted by how many people's favorites Qloo's explainability links to the candidate. That's a heuristic, not exact mathematical consensus.</p>
           <p><strong>Affinity, not guarantees.</strong> Results reflect likely enjoyment based on aggregate cultural patterns.</p>
           <p><strong>Privacy.</strong> No names, emails, or accounts. Optional nicknames stay in your browser session and are only used to label contributions.</p>
-          <p><strong>No LLM.</strong> Orchestration and the mini-plan are deterministic code over Qloo data.</p>
+          <p><strong>Qloo's taste AI, not a chatbot.</strong> The "AI" here is Qloo: a cultural affinity model trained on real-world taste patterns, which returns structured data — matched entities, affinity scores and explainability links. We deliberately don't add a text-generating AI (like ChatGPT) on top, because those can invent places or claim connections that don't exist. Instead, plain, inspectable code combines everyone's Qloo results, ranks them and builds the mini-plan — so every recommendation and every "why" you see traces back to an actual Qloo response.</p>
         </div>
       </div>
     </section>
