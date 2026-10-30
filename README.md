@@ -2,7 +2,7 @@
 
 **Find the overlap in your group's taste.** CommonGround is a group cultural discovery agent for the Qloo Agentic Hackathon. Friends, couples, families, or teams add a few favorite artists, films, books, places, brands, or games. CommonGround resolves those interests through Qloo, uses cultural affinity signals to build a shared shortlist, explains which inputs connect to each pick when Qloo provides explainability, and assembles a lightweight mini-plan.
 
-> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [LARAVEL.md](./LARAVEL.md) only if you need notes about an optional Laravel-based hosting or integration layer.
+> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LARAVEL.md](./README-LARAVEL.md) only if you need notes about an optional Laravel-based hosting or integration layer.
 
 ## Demo and source
 
