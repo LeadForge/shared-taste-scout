@@ -84,7 +84,7 @@ export const findCommonGround = createServerFn({ method: "POST" })
     const resolved: Resolved[] = await pool(jobs, 3, 150, async (j) => {
       const urn = CATEGORIES[j.category].urn;
       const params: Record<string, string> = { query: j.query, take: "1" };
-      if (urn) params.types = urn;
+      if (urn) params["types"] = urn;
       const ck = JSON.stringify(params);
       try {
         const r = searchCache.get(ck) ?? await qloo("/search", params, key);
@@ -177,5 +177,5 @@ export const findCommonGround = createServerFn({ method: "POST" })
       if (short.length >= 9) break;
     }
     trace.push({ stage: "Assembling shortlist", detail: `Ranked by Qloo affinity × share of group connected → ${short.length} picks`, calls: 0, ok: short.length });
-    return { mode: "live", resolved, trace, recommendations: short, plan: composePlan(data, short), warnings };
+    return { mode: "live", resolved, trace, recommendations: short, plan: composePlan(data as any, short), warnings };
   });
