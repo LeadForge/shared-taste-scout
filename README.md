@@ -1,8 +1,8 @@
 # CommonGround
 
-**Find the overlap in your group's taste.** CommonGround is a group cultural discovery agent for the Qloo Agentic Hackathon. Friends, couples, families, or teams add a few favorite artists, films, books, places, brands, or games. CommonGround resolves those interests through Qloo, uses cultural affinity signals to build a shared shortlist, explains which inputs connect to each pick when Qloo provides explainability, and assembles a lightweight mini-plan.
+**Find the overlap in your group's taste.** CommonGround helps friends, couples, families, and teams discover shared favorites across music, movies, books, places, brands, and more with Qloo-powered recommendations.
 
-> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LOVABLE.md](./README-LOVABLE.md) only if you need notes about an optional Laravel-based hosting or integration layer.
+> **Project status:** This repository contains a TypeScript/TanStack Start application. Laravel is not required to install, run, or build this project. See [README-LOVABLE.md](./README-LOVABLE.md) for Lovable-specific setup details.
 
 ## Demo and source
 
@@ -78,10 +78,10 @@ bun --version
 
    ```dotenv
    QLOO_API_KEY=replace_with_your_qloo_key
-   QLOO_API_BASE_URL=https://hackathon.api.qloo.com
+   QLOO_API_BASE_URL=your_qloo_api_base_url
    ```
 
-   The base URL above is the default Qloo hackathon host. If the hackathon supplied you a different server URL, use that exact base URL instead. Do not append `/search` or `/v2/insights` to the base URL.
+   Use the base URL supplied by the Qloo environment. Do not append `/search` or `/v2/insights` to the base URL.
 
 4. Start the development server:
 
@@ -109,14 +109,14 @@ When `QLOO_API_KEY` is absent, the server returns deterministic sample fixtures.
 | `QLOO_API_KEY` | Live Qloo mode | API key supplied for the Qloo hackathon. Sent only as the `X-Api-Key` request header from the server. |
 | `QLOO_API_BASE_URL` | Optional | Qloo API server base URL. Defaults to `https://hackathon.api.qloo.com` if not provided. |
 
-**Security:** Never put the API key in a `VITE_*` variable, frontend source file, public config, README, issue, screenshot, or commit. Keep `.env` local and untracked. If a key is accidentally committed or shared, revoke/rotate it through the provider.
+**Security:** Never put the API key in a `VITE_*` variable, frontend source file, public config, README, issue, screenshot, or commit. Keep `.env` local and untracked. If a key is accidentally committed, rotate it and remove it from Git history.
 
 ## Qloo request flow
 
 1. `GET {QLOO_API_BASE_URL}/search` resolves each free-text favorite to an entity ID, using a mapped entity type where available.
 2. Resolved IDs are combined into `signal.interests.entities`.
 3. `GET {QLOO_API_BASE_URL}/v2/insights` requests candidates for selected recommendation types. A city filter is added for place recommendations when the user supplies a city.
-4. Results are ranked using returned affinity and the share of participants connected through the explainability payload when present. This is a product heuristic, not a claim of mathematically exact group consensus.
+4. Results are ranked using returned affinity and the share of participants connected through the explainability payload when present. This is a product heuristic, not a claim of mathematically precise group preference.
 5. The UI renders a shortlist and a deterministic mini-plan summary.
 
 All calls are server-side and use the `X-Api-Key` header. The application does not need a separate LLM key for this deterministic workflow.
