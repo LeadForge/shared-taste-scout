@@ -1,6 +1,6 @@
 # Lovable deployment and secrets guide
 
-CommonGround is built and hosted with **Lovable**. It is not a Laravel application.
+CommonGround is built and hosted with **Lovable**.
 
 ## Open the project
 
@@ -28,4 +28,4 @@ Never paste API keys into Lovable chat, browser code, public GitHub files, or sc
 
 ## Local installation is separate
 
-Judges who want to install the application on their own machine should follow the root [README.md](./README.md). It uses Node.js and Bun. It does not require a Lovable account or Laravel installation. Live Qloo mode requires the judge to provide their own Qloo API credentials; demo mode works without them.
+Judges who want to install the application on their own machine should follow the root [README.md](./README.md). It uses Node.js and Bun. It does not require a Lovable account. Live Qloo mode requires the judge to provide their own Qloo API credentials; demo mode works without them.
