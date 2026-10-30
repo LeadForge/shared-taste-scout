@@ -10,7 +10,7 @@
 - **Live demo:** https://shared-taste-scout.lovable.app
 - **Hackathon:** Qloo Agentic Hackathon
 
-This is the public Lovable deployment intended for judging. The app is hosted on Lovable; Laravel is not required.
+This is the public Lovable deployment intended for judging.
 
 ## Features
 
@@ -82,7 +82,7 @@ bun --version
    QLOO_API_BASE_URL=your_qloo_api_base_url
    ```
 
-   Use the base URL supplied by the Qloo environment. Do not append `/search` or `/v2/insights` to the base URL.
+   Use the exact API base URL supplied by the Qloo hackathon environment if it differs from the default above. Do not append `/search` or `/v2/insights` to the base URL.
 
 4. Start the development server:
 
@@ -90,7 +90,7 @@ bun --version
    bun run dev
    ```
 
-5. Open the local URL printed by Vite (commonly `http://localhost:3000`).
+5. Open the local URL printed by Vite (commonly `http://localhost:3000`). No Lovable account is needed to run the source locally.
 
 ### Run without a Qloo key
 
@@ -145,6 +145,10 @@ The project is connected to Lovable. For hosted deployment:
 3. Keep the values server-side; do not add them to client-side environment variables.
 4. Publish/redeploy after changing code or secrets, then check that the app's status indicates a verified live Qloo connection.
 5. Run a real group query and confirm returned recommendations are live, not demo fixtures.
+
+## Submission materials
+
+See [SUBMISSION.md](./SUBMISSION.md) for prepared Devpost copy, Qloo integration explanation, judging instructions, and the rules checklist.
 
 ## Submission checklist
 
