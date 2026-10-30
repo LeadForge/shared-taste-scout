@@ -4,7 +4,8 @@ import { categoryFromType, composePlan } from "./engine";
 import { runDemo } from "./demo";
 import { CATEGORIES, INTENTS, type Category, type Recommendation, type Resolved, type RunResult, type TraceStep } from "./types";
 
-const HOST = "https://hackathon.api.qloo.com";
+const DEFAULT_HOST = "https://hackathon.api.qloo.com";
+const host = () => (process.env["QLOO_API_BASE_URL"] || DEFAULT_HOST).replace(/\/+$/, "");
 
 const InputSchema = z.object({
   people: z.array(z.object({
@@ -19,22 +20,49 @@ const InputSchema = z.object({
   forceDemo: z.boolean().optional(),
 });
 
-async function qloo(path: string, params: Record<string, string>, key: string): Promise<any> {
-  const url = `${HOST}${path}?${new URLSearchParams(params)}`;
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 9000);
-  try {
-    const res = await fetch(url, { headers: { "X-Api-Key": key, accept: "application/json" }, signal: ctrl.signal });
-    if (!res.ok) {
-      console.error("Qloo error", res.status, path, (await res.text()).slice(0, 300));
-      throw new Error(`Qloo returned ${res.status}`);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const searchCache = new Map<string, any>();
+
+/** Run tasks with limited concurrency and a small gap between starts (Qloo rate limits). */
+async function pool<T, R>(items: T[], limit: number, gapMs: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+      await sleep(gapMs);
     }
-    return await res.json();
-  } catch (e: any) {
-    throw new Error(e?.name === "AbortError" ? "Qloo request timed out" : e?.message || "Qloo request failed");
-  } finally {
-    clearTimeout(t);
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+async function qloo(path: string, params: Record<string, string>, key: string): Promise<any> {
+  const url = `${host()}${path}?${new URLSearchParams(params)}`;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const res = await fetch(url, { headers: { "X-Api-Key": key, accept: "application/json" }, signal: ctrl.signal });
+      if (res.status === 429 && attempt < 3) {
+        const ra = Number(res.headers.get("retry-after"));
+        await sleep(ra > 0 ? Math.min(ra * 1000, 5000) : 700 * 2 ** attempt + Math.random() * 300);
+        continue;
+      }
+      if (!res.ok) {
+        console.error("Qloo error", res.status, path, (await res.text()).slice(0, 300));
+        throw new Error(res.status === 429 ? "Qloo rate limit reached — try again in a moment" : `Qloo returned ${res.status}`);
+      }
+      return await res.json();
+    } catch (e: any) {
+      if (e?.name === "AbortError") throw new Error("Qloo request timed out");
+      throw new Error(e?.message || "Qloo request failed");
+    } finally {
+      clearTimeout(t);
+    }
   }
+  throw new Error("Qloo rate limit reached — try again in a moment");
 }
 
 export const getStatus = createServerFn({ method: "GET" }).handler(async () => ({
