@@ -21,7 +21,7 @@ flowchart LR
 
 ## Qloo endpoints used
 
-Host: `https://hackathon.api.qloo.com` · Header: `X-Api-Key: <QLOO_API_KEY>`
+Host: `QLOO_API_BASE_URL` secret (default `https://hackathon.api.qloo.com`); requests are paced and retried on 429 · Header: `X-Api-Key: <QLOO_API_KEY>`
 
 1. `GET /search?query=<text>&types=<urn>&take=1` — resolve each favorite to an entity ID. `types` is sent when the category maps (`urn:entity:artist|movie|book|place|brand|videogame`).
 2. `GET /v2/insights?filter.type=<urn>&signal.interests.entities=<id,id,…>&feature.explainability=true&take=8[&filter.location.query=<city>]` — one call per target category for the chosen intent. Place requests are only made when a city is supplied.

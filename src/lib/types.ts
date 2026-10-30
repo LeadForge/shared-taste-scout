@@ -21,7 +21,7 @@ export type Intent = keyof typeof INTENTS;
 
 export interface Interest { query: string; category: Category }
 export interface Person { name: string; interests: Interest[] }
-export interface RunInput { people: Person[]; location?: string; intent: Intent }
+export interface RunInput { people: Person[]; location?: string | undefined; intent: Intent }
 
 export interface Resolved {
   person: string; query: string; category: Category;

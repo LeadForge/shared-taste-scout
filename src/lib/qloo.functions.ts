@@ -30,7 +30,7 @@ async function pool<T, R>(items: T[], limit: number, gapMs: number, fn: (x: T) =
   const worker = async () => {
     while (next < items.length) {
       const i = next++;
-      out[i] = await fn(items[i]);
+      out[i] = await fn(items[i] as T);
       await sleep(gapMs);
     }
   };
@@ -177,5 +177,5 @@ export const findCommonGround = createServerFn({ method: "POST" })
       if (short.length >= 9) break;
     }
     trace.push({ stage: "Assembling shortlist", detail: `Ranked by Qloo affinity × share of group connected → ${short.length} picks`, calls: 0, ok: short.length });
-    return { mode: "live", resolved, trace, recommendations: short, plan: composePlan(data as any, short), warnings };
+    return { mode: "live", resolved, trace, recommendations: short, plan: composePlan(data, short), warnings };
   });
